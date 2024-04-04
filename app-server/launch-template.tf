@@ -5,9 +5,6 @@ resource "aws_launch_template" "app-server-template" {
   key_name      = local.aws-key-pair-name
   user_data = base64encode(local.user_data_script)  
   # latest_version = true
-  network_interfaces {
-    security_groups = [aws_security_group.cooking-corner-sg.id]
-  }
   block_device_mappings {
     device_name = "/dev/sda1"
     ebs {
