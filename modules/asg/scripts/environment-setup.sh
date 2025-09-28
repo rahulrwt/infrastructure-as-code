@@ -21,7 +21,7 @@ else
 fi
 
 #Set Environment Variable
-echo "${env_vars_script}" | sudo tee /etc/${app_name}-pms.env > /dev/null
+echo "${env_vars_script}" | sudo tee /etc/${app_name}.env > /dev/null
 
 # Set active profile based on environment variable
 ACTIVE_PROFILE="prod"
@@ -34,9 +34,9 @@ echo "Setting active profile to: $ACTIVE_PROFILE"
 if command -v jq >/dev/null 2>&1; then
   if [ -f /opt/pms/release-versions.json ]; then
     if [ "$ACTIVE_PROFILE" = "staging" ]; then
-      KEY="staging-${app_name}-pms"
+      KEY="staging-${app_name}"
     else
-      KEY="${app_name}-pms"
+      KEY="${app_name}"
     fi
     echo "Key is : $KEY"
     RELEASE_VERSION=$(jq -r --arg key "$KEY" '.[$key]' /opt/pms/release-versions.json 2>/dev/null || echo "")
@@ -57,7 +57,7 @@ else
   exit 1
 fi
 # Download and place the latest JAR file
-aws s3 cp s3://${app_name}-release-artifact/${app_name}-pms.$RELEASE_VERSION.jar /opt/pms/${app_name}-pms.jar || { echo "Failed to download ${app_name}-pms.$RELEASE_VERSION.jar"; exit 1; }
+aws s3 cp s3://${app_name}-release-artifact/${app_name}.$RELEASE_VERSION.jar /opt/pms/${app_name}.jar || { echo "Failed to download ${app_name}.$RELEASE_VERSION.jar"; exit 1; }
 aws s3 cp s3://${app_name}-secrets/whatsapp-private-key/private_pkcs8.pem /opt/pms/private_pkcs8.pem || { echo "Failed to download private_pkcs8.pem"; exit 1; }
 # Create app user and group
 sudo useradd -r -s /bin/false ${app_name}
@@ -200,7 +200,7 @@ sudo chown ${app_name}:${app_name} /opt/pms/upload-logs-on-shutdown.sh
 # Create systemd service for shutdown log upload
 cat > /tmp/upload-logs-shutdown.service << 'EOF'
 [Unit]
-Before=${app_name}-pms.service
+Before=${app_name}.service
 After=network.target
 [Service]
 Type=oneshot
@@ -216,7 +216,7 @@ EOF
 
 
 # Create systemd service file with environment-specific profile
-cat > /tmp/${app_name}-pms.service << EOF
+cat > /tmp/${app_name}.service << EOF
 [Unit]
 Description=${app_name} PMS Java Application
 After=network.target
@@ -225,16 +225,16 @@ Type=simple
 User=${app_name}
 Group=${app_name}
 WorkingDirectory=/opt/pms
-EnvironmentFile=/etc/${app_name}-pms.env
-ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/${app_name} -Dspring.profiles.active=$ACTIVE_PROFILE -jar /opt/pms/${app_name}-pms.jar
+EnvironmentFile=/etc/${app_name}.env
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/${app_name} -Dspring.profiles.active=$ACTIVE_PROFILE -jar /opt/pms/${app_name}.jar
 Restart=always
 RestartSec=10
 # Graceful shutdown configuration
 TimeoutStopSec=120
 KillMode=mixed
 KillSignal=SIGTERM
-StandardOutput=append:/var/log/${app_name}/${app_name}-pms.log
-StandardError=append:/var/log/${app_name}/${app_name}-pms-error.log
+StandardOutput=append:/var/log/${app_name}/${app_name}.log
+StandardError=append:/var/log/${app_name}/${app_name}-error.log
 # Security Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
@@ -248,7 +248,7 @@ WantedBy=multi-user.target
 EOF
 
 # Move service files to systemd directory and enable them
-sudo mv /tmp/${app_name}-pms.service /etc/systemd/system/
+sudo mv /tmp/${app_name}.service /etc/systemd/system/
 sudo mv /tmp/upload-logs-shutdown.service /etc/systemd/system/
 
 chmod 755 /opt/pms/upload-logs-on-shutdown.sh
@@ -256,16 +256,16 @@ chmod 755 /opt/pms/upload-logs-on-shutdown.sh
 sudo systemctl daemon-reload
 
 # Enable and start all services
-sudo systemctl enable ${app_name}-pms.service
+sudo systemctl enable ${app_name}.service
 sudo systemctl enable upload-logs-shutdown.service
 
 # Start the main services
-sudo systemctl start ${app_name}-pms.service
+sudo systemctl start ${app_name}.service
 sudo systemctl start upload-logs-shutdown.service
 # # Also directly modify the system shutdown sequence
 # sudo sed -i '2i /opt/pms/upload-logs-on-shutdown.sh || true' /etc/rc0.d/K01reboot
 # sudo sed -i '2i /opt/pms/upload-logs-on-shutdown.sh || true' /etc/rc6.d/K01reboot
 
-sudo systemctl status ${app_name}-pms.service
+sudo systemctl status ${app_name}.service
 sudo systemctl status upload-logs-shutdown.service
 echo "==== Completed download-latest-artifact.sh $(date) ===="
