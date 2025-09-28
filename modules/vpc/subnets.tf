@@ -1,6 +1,6 @@
 resource "aws_subnet" "load_balancer_subnet1" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.lb_subnet_cidr_1
+  cidr_block              = var.lb_subnet_cidr_1 != "" ? var.lb_subnet_cidr_1 : local.lb_subnet_cidr_1
   map_public_ip_on_launch = var.map_public_ip
   availability_zone       = format("%sa", var.region)
   tags = {
@@ -10,7 +10,7 @@ resource "aws_subnet" "load_balancer_subnet1" {
 
 resource "aws_subnet" "load_balancer_subnet2" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.lb_subnet_cidr_2
+  cidr_block              = var.lb_subnet_cidr_2 != "" ? var.lb_subnet_cidr_2 : local.lb_subnet_cidr_2
   map_public_ip_on_launch = var.map_public_ip
   availability_zone       = format("%sb", var.region)
   tags = {
@@ -20,7 +20,7 @@ resource "aws_subnet" "load_balancer_subnet2" {
 
 resource "aws_subnet" "rds_subnet1" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.rds_subnet_cidr_1
+  cidr_block              = var.rds_subnet_cidr_1 != "" ? var.rds_subnet_cidr_1 : local.rds_subnet_cidr_1
   map_public_ip_on_launch = var.map_public_ip
   availability_zone       = format("%sa", var.region)
 
@@ -31,7 +31,7 @@ resource "aws_subnet" "rds_subnet1" {
 
 resource "aws_subnet" "rds_subnet_2" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.rds_subnet_cidr_2
+  cidr_block              = var.rds_subnet_cidr_2 != "" ? var.rds_subnet_cidr_2 : local.rds_subnet_cidr_2
   map_public_ip_on_launch = var.map_public_ip
   availability_zone       = format("%sb", var.region)
 
@@ -42,7 +42,7 @@ resource "aws_subnet" "rds_subnet_2" {
 
 resource "aws_subnet" "backend_subnet" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.backend_subnet_cidr
+  cidr_block              = var.backend_subnet_cidr != "" ? var.backend_subnet_cidr : local.backend_subnet_cidr
   map_public_ip_on_launch = var.map_public_ip
 
   tags = {
@@ -52,7 +52,7 @@ resource "aws_subnet" "backend_subnet" {
 
 resource "aws_subnet" "rds_subnet" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.rds_subnet_cidr
+  cidr_block              = var.rds_subnet_cidr != "" ? var.rds_subnet_cidr : local.rds_subnet_cidr
   map_public_ip_on_launch = var.map_public_ip
 
   tags = {
@@ -62,7 +62,7 @@ resource "aws_subnet" "rds_subnet" {
 
 resource "aws_subnet" "ecs_cluster_subnet" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.ecs_cluster_subnet_cidr
+  cidr_block              = var.ecs_cluster_subnet_cidr != "" ? var.ecs_cluster_subnet_cidr : local.ecs_cluster_subnet_cidr
   map_public_ip_on_launch = var.map_public_ip
 
   tags = {

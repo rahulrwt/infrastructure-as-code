@@ -34,12 +34,17 @@ variable "spot_instance_option" {
   default = "t3.small"
 }
 
+variable "domain_name" {
+  description = "Domain name for Route 53 and ACM"
+  type        = string
+  default     = ""
+}
+
 variable "certificate_arn" {
   description = "Certificate ARN for the load balancer"
   type = string
   default = ""
 }
-
 variable "environment_type" {
   description = "Environment type (e.g., dev, prod)"
   type        = string
@@ -57,4 +62,10 @@ variable "app_name" {
   description = "Name of the application"
   type        = string
   default     = "trailandtale"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC (change this to avoid conflicts with existing VPCs)"
+  type        = string
+  default     = "10.2.0.0/16"  # Different from default 10.0.0.0/16 to avoid conflicts
 }

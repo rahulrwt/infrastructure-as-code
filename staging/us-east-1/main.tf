@@ -32,7 +32,7 @@ module "load_balancer" {
   asg_id = module.asg.asg_id
   lb_subnet_ids = module.vpc.lb_subnet_ids
   lb_sg_ids = module.security_group.lb_sg_ids
-  certificate_arn = var.certificate_arn
+  certificate_arn = var.certificate_arn != "" ? var.certificate_arn : (length(module.route53) > 0 ? module.route53[0].certificate_arn : "")
   prefix = "staging"
 }
 
@@ -60,14 +60,19 @@ module "security_group" {
 module "vpc" {
   source = "../../modules/vpc"
   region = var.aws_region
-
+  vpc_cidr = var.vpc_cidr
 }
 
-#Add prefix
 module "S3" {
   source = "../../modules/S3"
   prefix = var.prefix
-  create_release_bucket = false
+  create_release_bucket = false     #should be created in 1 environment only and should be shared among environments
+}
+
+module "route53" {
+  count = var.certificate_arn == "" ? 1 : 0
+  source = "../../modules/route-53"
+  domain_name = var.domain_name
 }
 
 # module "waf" {

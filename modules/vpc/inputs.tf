@@ -3,46 +3,51 @@ variable "region" {
   type = string
 }
 
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC "
+  type = string
+}
+
 variable "lb_subnet_cidr_1" {
   description = "CIDR block for load balancer subnet 1"
   type = string
-  default = "10.0.1.0/24"
+  default = ""
 }
 
 variable "backend_subnet_cidr" {
   description = "CIDR block for backend subnet"
   type = string
-  default = "10.0.2.0/24"
+  default = ""
 }
 
 variable "rds_subnet_cidr" {
   description = "CIDR block for RDS subnet"
   type = string
-  default = "10.0.3.0/24"
+  default = ""
 }
 
 variable "ecs_cluster_subnet_cidr" {
   description = "CIDR block for ecs cluster subnet"
   type = string
-  default = "10.0.4.0/24"
+  default = ""
 }
 
 variable "lb_subnet_cidr_2" {
   description = "CIDR block for load balancer subnet 2"
   type = string
-  default = "10.0.5.0/24"
+  default = ""
 }
 
 variable "rds_subnet_cidr_1" {
   description = "CIDR block for RDS subnet 1"
   type = string
-  default = "10.0.6.0/24"
+  default = ""
 }
 
 variable "rds_subnet_cidr_2" {
   description = "CIDR block for RDS subnet 2"
   type = string
-  default = "10.0.7.0/24"
+  default = ""
 }
 
 
