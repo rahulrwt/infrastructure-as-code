@@ -1,5 +1,5 @@
 # infrastructure-as-code
-IAC project for running and monitoring nodejs application
+IAC project for running and monitoring java springboot application
 
 
 Issues you might face
