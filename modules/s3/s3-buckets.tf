@@ -37,7 +37,7 @@ resource "aws_s3_bucket" "app-objects" {
   bucket = "${local.name_prefix}${var.app_name}-objects"
 }
 
-resource "aws_s3_bucket" "proappppo-secrets" {
+resource "aws_s3_bucket" "app-secrets" {
   bucket = "${local.name_prefix}${var.app_name}-secrets"
 }
 

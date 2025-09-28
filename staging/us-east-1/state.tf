@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "terraform_state" {
-  name           = "terraform-state-lock"
+  name           = "rahul-terraform-state-lock"
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "LockID"
   
@@ -19,8 +19,7 @@ terraform {
   backend "s3" {
       bucket                  = "cooking-corner-terraform-s3"
       key                     = "cooking-corner-state"
-      region                  = "ap-south-1"
-    #   dynamodb_table          = "terrafotrm-state-lock"
-      # shared_credentials_file = "~/.aws/credentials"
+      region                  = "us-east-1"
+    #   dynamodb_table          = "rahul-terraform-state-lock"  #Once the terraform_state dynamodb table is created, uncomment this
   }
 }

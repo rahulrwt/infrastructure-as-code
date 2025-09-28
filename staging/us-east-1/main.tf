@@ -1,5 +1,6 @@
 module "asg" {
     source = "../../modules/asg"
+    app_name = var.app_name
     asg_name = "${var.app_name}-server-asg"
     instance-type = var.instance-type
     app-server-ami = var.app-server-ami
@@ -26,7 +27,7 @@ module "iam" {
 
 module "load_balancer" {
   source = "../../modules/load-balancer"
-  lb_name = "${var.app_name}-load-balancer"
+  lb_name = "${var.app_name}-lb"
   vpc_id = module.vpc.vpc_id
   asg_id = module.asg.asg_id
   lb_subnet_ids = module.vpc.lb_subnet_ids
