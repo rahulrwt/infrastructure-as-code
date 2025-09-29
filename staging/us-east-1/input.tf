@@ -41,7 +41,7 @@ variable "domain_name" {
 }
 
 variable "certificate_arn" {
-  description = "Certificate ARN for the load balancer"
+  description = "Certificate ARN for the load balancer if route53 and certificate is setup manually"
   type = string
   default = ""
 }
