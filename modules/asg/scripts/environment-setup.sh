@@ -9,13 +9,13 @@ unzip awscliv2.zip
 sudo ./aws/install
 aws --version
 # Create necessary directories
-sudo mkdir -p /opt/pms
-sudo chmod 755 /opt/pms
+sudo mkdir -p /opt/app
+sudo chmod 755 /opt/app
 # Download file from s3
-aws s3 cp s3://${app_name}-release-artifact/release-versions.json /opt/pms/release-versions.json || { echo "Failed to download release-versions.json"; exit 1; }
+aws s3 cp s3://${app_name}-release-artifact/release-versions.json /opt/app/release-versions.json || { echo "Failed to download release-versions.json"; exit 1; }
 # Verify file existence
-if [[ -f /opt/pms/release-versions.json ]]; then
- cat /opt/pms/release-versions.json
+if [[ -f /opt/app/release-versions.json ]]; then
+ cat /opt/app/release-versions.json
 else
  echo "release-versions.json not found"
 fi
@@ -32,14 +32,14 @@ echo "Setting active profile to: $ACTIVE_PROFILE"
 
 # Extract version using jq
 if command -v jq >/dev/null 2>&1; then
-  if [ -f /opt/pms/release-versions.json ]; then
+  if [ -f /opt/app/release-versions.json ]; then
     if [ "$ACTIVE_PROFILE" = "staging" ]; then
       KEY="staging-${app_name}"
     else
       KEY="${app_name}"
     fi
     echo "Key is : $KEY"
-    RELEASE_VERSION=$(jq -r --arg key "$KEY" '.[$key]' /opt/pms/release-versions.json 2>/dev/null || echo "")
+    RELEASE_VERSION=$(jq -r --arg key "$KEY" '.[$key]' /opt/app/release-versions.json 2>/dev/null || echo "")
     
     if [[ -n "$RELEASE_VERSION" && "$RELEASE_VERSION" != "null" ]]; then
       echo "Extracted version: $RELEASE_VERSION"
@@ -57,22 +57,22 @@ else
   exit 1
 fi
 # Download and place the latest JAR file
-aws s3 cp s3://${app_name}-release-artifact/${app_name}.$RELEASE_VERSION.jar /opt/pms/${app_name}.jar || { echo "Failed to download ${app_name}.$RELEASE_VERSION.jar"; exit 1; }
-aws s3 cp s3://${app_name}-secrets/whatsapp-private-key/private_pkcs8.pem /opt/pms/private_pkcs8.pem || { echo "Failed to download private_pkcs8.pem"; exit 1; }
+aws s3 cp s3://${app_name}-release-artifact/${app_name}.$RELEASE_VERSION.jar /opt/app/${app_name}.jar || { echo "Failed to download ${app_name}.$RELEASE_VERSION.jar"; exit 1; }
+aws s3 cp s3://${app_name}-secrets/whatsapp-private-key/private_pkcs8.pem /opt/app/private_pkcs8.pem || { echo "Failed to download private_pkcs8.pem"; exit 1; }
 # Create app user and group
 sudo useradd -r -s /bin/false ${app_name}
 sudo mkdir -p /var/log/${app_name}
-sudo chown -R ${app_name}:${app_name} /var/log/${app_name} /opt/pms
+sudo chown -R ${app_name}:${app_name} /var/log/${app_name} /opt/app
 sudo chmod 750 /var/log/${app_name}
 
 # Record instance start time
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
 START_TIME=$(date +%Y%m%d-%H%M%S)
-echo "$START_TIME" > /opt/pms/instance_start_time
+echo "$START_TIME" > /opt/app/instance_start_time
 
 # Create shutdown script to upload logs to S3 when instance terminates
 # Create file with environment placeholder
-cat > /opt/pms/upload-logs-on-shutdown.sh << 'END_OF_SCRIPT'
+cat > /opt/app/upload-logs-on-shutdown.sh << 'END_OF_SCRIPT'
 #!/bin/bash
 # Don't use set -e since we want to continue even if some commands fail
 set -e 
@@ -104,8 +104,8 @@ echo "Instance ID: $INSTANCE_ID"
 echo "Region: $REGION"
 
 # Get start time and calculate end time
-if [ -f /opt/pms/instance_start_time ]; then
-  START_TIME=$(cat /opt/pms/instance_start_time)
+if [ -f /opt/app/instance_start_time ]; then
+  START_TIME=$(cat /opt/app/instance_start_time)
   echo "Start time: $START_TIME"
 else
   START_TIME="unknown"
@@ -160,7 +160,7 @@ if command -v aws &> /dev/null; then
   echo "Uploading individual log files..."
   if [ -d "$LOG_DIR" ]; then
     # Only upload the most important log files to save time during shutdown
-    for log_file in $LOG_DIR/pms-application.log $LOG_DIR/pms-error.log $BOOT_LOG_DIR/cloud-init-output.log; do
+    for log_file in $LOG_DIR/${app_name}-application.log $LOG_DIR/${app_name}-error.log $BOOT_LOG_DIR/cloud-init-output.log; do
       if [ -f "$log_file" ]; then
         filename=$(basename "$log_file")
         echo "Uploading $filename..."
@@ -191,11 +191,11 @@ echo "=== Log upload script completed at $(date) ==="
 END_OF_SCRIPT
 
 # Replace the placeholder with actual environment
-sed -i "s/environment_PLACEHOLDER/${environment}/g" /opt/pms/upload-logs-on-shutdown.sh
+sed -i "s/environment_PLACEHOLDER/${environment}/g" /opt/app/upload-logs-on-shutdown.sh
 
 # Make script executable and set permissions
-sudo chmod +x /opt/pms/upload-logs-on-shutdown.sh
-sudo chown ${app_name}:${app_name} /opt/pms/upload-logs-on-shutdown.sh
+sudo chmod +x /opt/app/upload-logs-on-shutdown.sh
+sudo chown ${app_name}:${app_name} /opt/app/upload-logs-on-shutdown.sh
 
 # Create systemd service for shutdown log upload
 cat > /tmp/upload-logs-shutdown.service << 'EOF'
@@ -205,7 +205,7 @@ After=network.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStop=/opt/pms/upload-logs-on-shutdown.sh
+ExecStop=/opt/app/upload-logs-on-shutdown.sh
 User=${app_name}
 Group=${app_name}
 StandardOutput=append:/var/log/${app_name}/upload-logs-s3-info.log
@@ -218,15 +218,15 @@ EOF
 # Create systemd service file with environment-specific profile
 cat > /tmp/${app_name}.service << EOF
 [Unit]
-Description=${app_name} PMS Java Application
+Description=${app_name} Java Application
 After=network.target
 [Service]
 Type=simple
 User=${app_name}
 Group=${app_name}
-WorkingDirectory=/opt/pms
+WorkingDirectory=/opt/app
 EnvironmentFile=/etc/${app_name}.env
-ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/${app_name} -Dspring.profiles.active=$ACTIVE_PROFILE -jar /opt/pms/${app_name}.jar
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/${app_name} -Dspring.profiles.active=$ACTIVE_PROFILE -jar /opt/app/${app_name}.jar
 Restart=always
 RestartSec=10
 # Graceful shutdown configuration
@@ -240,7 +240,7 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=/opt/pms
+ReadWritePaths=/opt/app
 ReadWritePaths=/var/log/${app_name}
 LimitNOFILE=65536
 [Install]
@@ -251,7 +251,7 @@ EOF
 sudo mv /tmp/${app_name}.service /etc/systemd/system/
 sudo mv /tmp/upload-logs-shutdown.service /etc/systemd/system/
 
-chmod 755 /opt/pms/upload-logs-on-shutdown.sh
+chmod 755 /opt/app/upload-logs-on-shutdown.sh
 
 sudo systemctl daemon-reload
 
@@ -263,8 +263,8 @@ sudo systemctl enable upload-logs-shutdown.service
 sudo systemctl start ${app_name}.service
 sudo systemctl start upload-logs-shutdown.service
 # # Also directly modify the system shutdown sequence
-# sudo sed -i '2i /opt/pms/upload-logs-on-shutdown.sh || true' /etc/rc0.d/K01reboot
-# sudo sed -i '2i /opt/pms/upload-logs-on-shutdown.sh || true' /etc/rc6.d/K01reboot
+# sudo sed -i '2i /opt/app/upload-logs-on-shutdown.sh || true' /etc/rc0.d/K01reboot
+# sudo sed -i '2i /opt/app/upload-logs-on-shutdown.sh || true' /etc/rc6.d/K01reboot
 
 sudo systemctl status ${app_name}.service
 sudo systemctl status upload-logs-shutdown.service
